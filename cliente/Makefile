@@ -1,6 +1,5 @@
 # Makefile - ACE/TAO-CORBA
-# SD - Escola Politécnica - PUCPR
-# Prof. Luiz Lima Jr.
+# PD - Escola Politécnica - PUCPR
 
 include $(ACE_ROOT)/include/makeinclude/platform_macros.GNU
 
@@ -8,10 +7,10 @@ include $(ACE_ROOT)/include/makeinclude/platform_macros.GNU
 # Parâmetros:
 #
 
-PROJECT = cliente_conta
+PROJECT = cliente_logger
 SERVER = false
 
-IDL.idl = Conta.idl
+IDL.idl = Logger.idl
 COMMON.cpp =
 SOURCES.cpp = \
 	cliente.cpp
@@ -46,9 +45,6 @@ INCS = $(foreach d, $(INCLUDES), -I$d)
 LIBS = $(foreach l, $(LIBRARIES), -l$l)
 LIBDIRS = $(foreach d, $(LIB_DIRS), -L$d)
 
-# C++ Adtional Compliler and Linker Flags
-# -Wno-tautological-undefined-compare
-
 CPPFLAGS +=
 LDFLAGS +=
 
@@ -74,8 +70,6 @@ LINK.cpp = $(CXX) $(LDFLAGS)
 all: $(PROGRAM)
 objects: $(SOURCES) $(OBJECTS)
 sources: $(SOURCES)
-teste:
-	@echo -e $(SOURCES)
 $(PROGRAM): $(SOURCES.cpp) $(OBJECTS)
 	@echo -e "\nLinkando $(notdir $@)\n"
 	@$(LINK.cpp) -o $@ $(OBJECTS) $(LIBDIRS) $(LIBS)
@@ -85,4 +79,3 @@ clean:
 cleanall:
 	@echo -e "\nLimpando tudo : $(notdir $(GENERATED))\n"
 	@rm -f core $(GENERATED)
-

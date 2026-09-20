@@ -1,0 +1,31 @@
+//
+// Trabalho 1 - Logger CORBA
+// Programação Distribuída
+// Escola Politécnica - PUCPR
+//
+// Grupo T1:
+//   - Renato Pestana de Gouveia
+//
+// Compilar com:
+//
+//     tao_idl -Gstl Logger.idl
+//
+
+// Severidades possíveis de um evento
+enum Severidade { DEBUG, WARNING, ERROR, CRITICAL };
+
+// Lançada por locate() quando ainda não houve evento com a severidade pedida
+exception EventoNaoEncontrado {};
+
+interface Logger {
+
+    // Notificação assíncrona (oneway): o cliente não espera resposta
+    oneway void log(in Severidade severidade,
+                    in string endereco,          // "ip:porta"
+                    in unsigned short pid,       // inteiro curto sem sinal
+                    in unsigned long long hora,  // segundos desde 1/1/1970
+                    in string msg);
+
+    // Endereço do último evento recebido com severidade s
+    string locate(in Severidade s) raises (EventoNaoEncontrado);
+};
