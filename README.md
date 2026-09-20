@@ -3,7 +3,6 @@
 ### SISTEMA DISTRIBUÍDO CLIENTE/SERVIDOR CORBA
  
 *Trabalho 1 — Programação Distribuída — Escola Politécnica — PUCPR*
-*Baseado no projeto Conta Bancária do Prof. Luiz A. de P. Lima Jr.*
  
 O servidor (**Logger**) mantém o registro de eventos que ocorrem em clientes
 espalhados na rede. Os clientes enviam eventos por meio da operação assíncrona
