@@ -1,0 +1,82 @@
+# Versão enxuta: build multi-stage do ACE+TAO (CORBA).
+# O estágio "builder" compila; a imagem final recebe só o que é preciso
+# para compilar e rodar o projeto (bibliotecas, headers, tao_idl, tao_cosnaming).
+#
+#   docker build -f docker/Dockerfile.slim -t tao:8.0.7-slim .
+#   docker run -it --rm --name tao -v "$PWD":/projeto tao:8.0.7-slim
+#   docker exec -it tao bash
+#
+FROM ubuntu:24.04 AS builder
+
+ARG ACE_VERSION=8.0.7
+ARG ACE_TAG=8_0_7
+
+ENV ACE_ROOT=/opt/ACE_wrappers \
+    TAO_ROOT=/opt/ACE_wrappers/TAO \
+    MPC_ROOT=/opt/ACE_wrappers/MPC \
+    LD_LIBRARY_PATH=/opt/ACE_wrappers/lib
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential perl wget ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget -q "https://github.com/DOCGroup/ACE_TAO/releases/download/ACE%2BTAO-${ACE_TAG}/ACE+TAO-${ACE_VERSION}.tar.gz" \
+        -O /tmp/acetao.tar.gz \
+    && tar xzf /tmp/acetao.tar.gz -C /opt \
+    && rm /tmp/acetao.tar.gz
+
+# debug=0: o padrão do ACE em Linux é debug=1, que gera bibliotecas enormes
+RUN echo '#include "ace/config-linux.h"' > $ACE_ROOT/ace/config.h \
+    && printf 'debug=0\noptimize=1\ninclude $(ACE_ROOT)/include/makeinclude/platform_linux.GNU\n' \
+        > $ACE_ROOT/include/makeinclude/platform_macros.GNU
+
+# No orbsvcs, "CosNaming_Serv" compila só a cadeia do Servidor de Nomes,
+# em vez de todos os serviços CORBA (Event, Notification, Trading, Security...)
+RUN make -j"$(nproc)" -C $ACE_ROOT/ace \
+    && make -j"$(nproc)" -C $ACE_ROOT/apps/gperf/src \
+    && make -j"$(nproc)" -C $TAO_ROOT/TAO_IDL \
+    && make -j"$(nproc)" -C $TAO_ROOT/tao \
+    && make -j"$(nproc)" -C $TAO_ROOT/orbsvcs/orbsvcs CosNaming_Serv \
+    && make -j"$(nproc)" -C $TAO_ROOT/orbsvcs/Naming_Service
+
+# Monta uma árvore enxuta: sem fontes de testes/exemplos, sem objetos, sem símbolos.
+# ATENÇÃO: o que está em lib/ são links simbólicos relativos para o diretório onde
+# cada biblioteca foi compilada (ex.: ../TAO/TAO_IDL/libTAO_IDL_BE.so.4.0.7).
+# Todo diretório apontado por esses links precisa vir junto, senão os links quebram.
+RUN mkdir -p /slim/ACE_wrappers/bin /slim/ACE_wrappers/include \
+             /slim/ACE_wrappers/TAO/orbsvcs /slim/ACE_wrappers/TAO/TAO_IDL \
+    && cp -a  $ACE_ROOT/lib                          /slim/ACE_wrappers/ \
+    && cp -aL $ACE_ROOT/bin/tao_idl                  /slim/ACE_wrappers/bin/ \
+    && cp -aL $ACE_ROOT/bin/ace_gperf                /slim/ACE_wrappers/bin/ \
+    && cp -aL $TAO_ROOT/orbsvcs/Naming_Service/tao_cosnaming /slim/ACE_wrappers/bin/ \
+    && cp -a  $ACE_ROOT/ace                          /slim/ACE_wrappers/ \
+    && cp -a  $ACE_ROOT/include/makeinclude          /slim/ACE_wrappers/include/ \
+    && cp -a  $TAO_ROOT/tao                          /slim/ACE_wrappers/TAO/ \
+    && cp -a  $TAO_ROOT/orbsvcs/orbsvcs              /slim/ACE_wrappers/TAO/orbsvcs/ \
+    && cp -a  $TAO_ROOT/TAO_IDL/*.so*                /slim/ACE_wrappers/TAO/TAO_IDL/ \
+    && find /slim \( -name '*.o' -o -name '*.a' -o -name '.depend.*' \) -delete \
+    && find /slim -type f -name '*.so*' -exec strip --strip-unneeded {} + \
+    && strip --strip-unneeded /slim/ACE_wrappers/bin/* \
+    && ! find /slim/ACE_wrappers/lib -xtype l | grep .   # falha se sobrou link quebrado
+
+
+FROM ubuntu:24.04
+
+ENV ACE_ROOT=/opt/ACE_wrappers \
+    TAO_ROOT=/opt/ACE_wrappers/TAO \
+    LD_LIBRARY_PATH=/opt/ACE_wrappers/lib
+ENV PATH=$ACE_ROOT/bin:$PATH
+
+# g++ e make porque o projeto é compilado dentro do container
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        g++ make \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /slim/ACE_wrappers /opt/ACE_wrappers
+
+# Teste de fumaça: se faltar alguma biblioteca, o build falha aqui,
+# e não na primeira vez que alguém tentar gerar os stubs
+RUN tao_idl -V && tao_cosnaming -h > /dev/null 2>&1 || true
+
+WORKDIR /projeto
+CMD ["/bin/bash"]

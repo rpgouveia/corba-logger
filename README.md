@@ -2,7 +2,7 @@
  
 ### SISTEMA DISTRIBUÍDO CLIENTE/SERVIDOR CORBA
  
-*Trabalho 1 — Programação Distribuída — Escola Politécnica — PUCPR*
+*Trabalho 1 — Sistemas Distribuídos — Escola Politécnica — PUCPR*
  
 O servidor (**Logger**) mantém o registro de eventos que ocorrem em clientes
 espalhados na rede. Os clientes enviam eventos por meio da operação assíncrona
@@ -68,9 +68,36 @@ $ ./cliente_logger Logger -ORBInitRef NameService=corbaloc:iiop:localhost:2809/N
  
 Para encerrar o servidor, use `Ctrl+C`.
  
-> **Obs.:** no ambiente da universidade não há permissão para escutar portas,
-> então lá só é possível compilar. A execução deve ser feita em uma máquina
-> onde o Servidor de Nomes e o Logger possam abrir portas.
+### Saída esperada:
+ 
+No terminal do Logger:
+ 
+```
+Logger aguardando eventos...
+[21/09/2026 00:26:33] DEBUG    192.168.1.1:1500 (pid 1001): conexao iniciada
+[21/09/2026 00:26:38] WARNING  192.168.1.2:1600 (pid 2002): uso de memoria acima de 80%
+[21/09/2026 00:26:43] ERROR    192.168.1.3:1500 (pid 3003): falha ao abrir arquivo
+[21/09/2026 00:26:48] ERROR    192.168.1.2:1600 (pid 2002): timeout na conexao
+locate(DEBUG)
+locate(WARNING)
+locate(ERROR)
+locate(CRITICAL)
+```
+ 
+No terminal do cliente:
+ 
+```
+4 eventos enviados.
+ 
+locate(DEBUG) = 192.168.1.1:1500
+locate(WARNING) = 192.168.1.2:1600
+locate(ERROR) = 192.168.1.2:1600
+locate(CRITICAL): nenhum evento com essa severidade (excecao)
+```
+ 
+Repare que `locate(ERROR)` devolve o endereço do **último** evento dessa
+severidade, e que `locate(CRITICAL)` lança a exceção, porque nenhum evento
+CRITICAL foi enviado.
  
 ### Para limpar arquivos intermediários:
  
