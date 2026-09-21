@@ -16,9 +16,6 @@ compila com `debug=0` (o padrão do ACE em Linux é `debug=1`) e, no orbsvcs, us
 o alvo `CosNaming_Serv`, que constrói só a cadeia do Servidor de Nomes em vez de
 todos os serviços CORBA.
  
-A primeira construção demora (algo entre 20 e 60 minutos, dependendo da
-máquina), mas só acontece uma vez.
- 
 ## 1. Construir a imagem
  
 Da raiz do projeto — repare que o `-f` é relativo ao diretório atual:
