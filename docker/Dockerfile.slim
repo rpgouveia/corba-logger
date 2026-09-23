@@ -66,6 +66,10 @@ ENV ACE_ROOT=/opt/ACE_wrappers \
     TAO_ROOT=/opt/ACE_wrappers/TAO \
     LD_LIBRARY_PATH=/opt/ACE_wrappers/lib
 ENV PATH=$ACE_ROOT/bin:$PATH
+# Mesma variável usada no laboratório da universidade: o TAO a lê na
+# inicialização como referência padrão do NameService, o que dispensa
+# passar -ORBInitRef na linha de comando
+ENV NameServiceIOR=corbaloc:iiop:localhost:2809/NameService
 
 # g++ e make porque o projeto é compilado dentro do container
 RUN apt-get update && apt-get install -y --no-install-recommends \
