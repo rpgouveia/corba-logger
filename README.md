@@ -1,15 +1,15 @@
 # LOGGER
- 
+
 ### SISTEMA DISTRIBUÍDO CLIENTE/SERVIDOR CORBA
- 
-*Trabalho 1 — Sistemas Distribuídos — Escola Politécnica — PUCPR*
- 
+
+*Trabalho 1 — Programação Distribuída — Escola Politécnica — PUCPR*
+
 O servidor (**Logger**) mantém o registro de eventos que ocorrem em clientes
 espalhados na rede. Os clientes enviam eventos por meio da operação assíncrona
 `log()` e consultam o endereço do último evento de uma severidade com `locate()`.
- 
+
 ### Interface (`idl/Logger.idl`)
- 
+
 * `oneway void log(severidade, endereco, pid, hora, msg)` — registra um evento
   (impresso na tela pelo Logger)
     * `severidade`: `DEBUG`, `WARNING`, `ERROR` ou `CRITICAL` (enum `Severidade`)
@@ -19,59 +19,86 @@ espalhados na rede. Os clientes enviam eventos por meio da operação assíncron
     * `msg`: descrição do evento
 * `string locate(severidade)` — retorna o endereço do último evento recebido com
   essa severidade; lança `EventoNaoEncontrado` se ainda não houve nenhum
+
 ### Diretórios:
- 
+
 * `idl`: arquivo IDL + *stub* + *skeleton*
 * `bin`: executáveis (os resultados das compilações são gerados aqui)
 * `cliente`: cliente de teste (envia eventos fictícios e testa toda a interface)
 * `servidor`: servidor Logger (`LoggerI.cpp` contém a implementação)
+
 ### Para gerar stub e skeleton, digite:
- 
+
 ```bash
 $ cd idl
 $ tao_idl -Gstl Logger.idl
 ```
- 
+
 (`-Gstl`: para usar biblioteca padrão C++)
- 
+
 ### Para compilar, digite:
- 
+
 ```bash
 $ cd bin                # compila cliente e servidor
 $ make
 ```
- 
+
 ou, separadamente:
- 
+
 ```bash
 $ cd cliente            # (ou: cd servidor)
 $ make
 ```
- 
+
 ### Para executar:
- 
+
 O servidor publica a IOR do Logger no **Servidor de Nomes**, que deve estar
 rodando antes. Cada comando em um terminal separado:
- 
+
+**No laboratório da universidade**, o Servidor de Nomes já está no ar e a
+variável de ambiente `NameServiceIOR` já aponta para ele, então bastam dois
+comandos, um em cada terminal:
+
+```bash
+$ cd bin
+$ ./servidor_logger <nome>     # terminal 1
+$ ./cliente_logger  <nome>     # terminal 2
+```
+
+`<nome>` é o nome sob o qual o objeto é registrado no Servidor de Nomes.
+
+**Em uma máquina própria**, é preciso subir o Servidor de Nomes e indicar onde
+ele está:
+
 ```bash
 # 1. Servidor de Nomes (tao_cosnaming ou Naming_Service, conforme a versão do TAO)
 $ tao_cosnaming -ORBEndpoint iiop://localhost:2809
- 
+
 # 2. Servidor Logger
 $ cd bin
 $ ./servidor_logger Logger -ORBInitRef NameService=corbaloc:iiop:localhost:2809/NameService
- 
+
 # 3. Cliente
 $ cd bin
 $ ./cliente_logger Logger -ORBInitRef NameService=corbaloc:iiop:localhost:2809/NameService
 ```
- 
+
+O `-ORBInitRef` pode ser substituído pela mesma variável usada no laboratório,
+que o TAO lê na inicialização:
+
+```bash
+$ export NameServiceIOR=corbaloc:iiop:localhost:2809/NameService
+```
+
 Para encerrar o servidor, use `Ctrl+C`.
- 
+
+> **Obs.:** para rodar fora do laboratório sem instalar o ACE+TAO na máquina,
+> há um ambiente em container pronto, descrito em `docker/README.md`.
+
 ### Saída esperada:
- 
+
 No terminal do Logger:
- 
+
 ```
 Logger aguardando eventos...
 [21/09/2026 00:26:33] DEBUG    192.168.1.1:1500 (pid 1001): conexao iniciada
@@ -83,24 +110,24 @@ locate(WARNING)
 locate(ERROR)
 locate(CRITICAL)
 ```
- 
+
 No terminal do cliente:
- 
+
 ```
 4 eventos enviados.
- 
+
 locate(DEBUG) = 192.168.1.1:1500
 locate(WARNING) = 192.168.1.2:1600
 locate(ERROR) = 192.168.1.2:1600
 locate(CRITICAL): nenhum evento com essa severidade (excecao)
 ```
- 
+
 Repare que `locate(ERROR)` devolve o endereço do **último** evento dessa
 severidade, e que `locate(CRITICAL)` lança a exceção, porque nenhum evento
 CRITICAL foi enviado.
- 
+
 ### Para limpar arquivos intermediários:
- 
+
 ```bash
 $ cd cliente            # (ou: cd servidor)
 $ make clean            # objetos e executável
